@@ -21,6 +21,9 @@ class App(tk.Tk):
         container.grid(row=0, column = 0, sticky='nsew')
 		
         self.container_global = container
+		
+        self.title("Smart Power Meter")
+        self.call('wm', 'iconphoto', self.winfo_toplevel()._w, tk.PhotoImage(file='baseline_power_black_24dp.png'))
         	
         self.geometry("655x660")
         self.resizable(False, False)
@@ -30,7 +33,7 @@ class App(tk.Tk):
         #    self.frames[F] = frame
         #    frame.grid(row=0, column = 0, sticky='nsew')
         container.frame1= ConnectionFrame(container, self)
-        container.frame1.grid(row=1, column = 0, sticky='nsew')	
+        container.frame1.grid(row=1, column = 0, sticky='NEWS')	
 		
         #container.frame1.page_title_label.grid_forget()	
         #container.frame1.page_title_label.grid_forget()
@@ -47,23 +50,30 @@ class App(tk.Tk):
     def show_connection_frame(self):
         if self.diagnosticframe != -1:
             self.diagnosticframe.page_title_label.grid_forget()
-            self.diagnosticframe.menubar.grid_forget()		
-        
+            self.diagnosticframe.menubar.grid_forget()
+            self.diagnosticframe.voltage_canvas.get_tk_widget().grid_forget()
+            self.diagnosticframe.current_canvas.get_tk_widget().grid_forget()			
+            self.diagnosticframe.phase_canvas.get_tk_widget().grid_forget()
+            self.diagnosticframe.statusbar.grid_forget()
+            self.diagnosticframe.reset_button.grid_forget()
+			
         self.config(menu=self.connectframe.menubar)
-        self.connectframe.statusbar.grid(column=0, row=7, padx=5, pady=5, sticky="WE", columnspan=4)
-        self.connectframe.page_title_label.grid(column=0, row=0, padx=100, pady=5, columnspan=4)		
+        self.connectframe.statusbar.grid(column=0, row=7, padx=5, pady=5, sticky="WES", columnspan=4)
+        self.connectframe.page_title_label.grid(column=0, row=0, padx=100, pady=5, columnspan=4)			
         self.connectframe.device_picker.grid(column=2, row=1, padx=5, pady=5,  sticky="WE", columnspan=2)		
         self.connectframe.device_label.grid(column=0, row=1, padx=5, pady=5, sticky="W", columnspan=2)
         self.connectframe.connect_button.grid(column=0, row=2,padx=5, pady=5, sticky="WE", columnspan=4)
         self.connectframe.type_label.grid(column=0, row=3,padx=5, pady=5, sticky="W")	
-        self.connectframe.type_entry.grid(column=1, row=3,padx=5, pady=5, sticky="E", columnspan=1)	
+        self.connectframe.type_entry.grid(column=1, row=3,padx=5, pady=5, sticky="E", columnspan=1)
         self.connectframe.port_label.grid(column=2, row=3,padx=5, pady=5, sticky="W")
         self.connectframe.port_entry.grid(column=3, row=3,padx=5, pady=5, sticky="E", columnspan=1)	
         self.connectframe.request_button.grid(column=0, row=4,padx=5, pady=5, sticky="WE", columnspan=4)
         self.connectframe.clear_button.grid(column=0, row=6,padx=5, pady=5, sticky="WE", columnspan=2)
         self.connectframe.Uptime_button.grid(column=2, row=6, padx=5, pady=5, sticky="WE", columnspan=2)
-        self.connectframe.return_text.grid(column=0, row=5, padx=5, pady=5, sticky="WE", columnspan=4)
-		
+        self.connectframe.return_text.grid(column=0, row=5, padx=5, pady=5, sticky="WE", columnspan=4)	
+        #self.connectframe.return_text.config(state='disabled')
+        #self.connectframe.return_text.grid(column=0, row=5, padx=5, pady=5, sticky="WE", columnspan=4)
+        #self.connectframe.return_text.see("end")
         self.connectframe.tkraise()		
 		
     #    print(cont)
@@ -96,11 +106,13 @@ class App(tk.Tk):
             self.diagnosticframe.tkraise()
         else:
             self.config(menu=self.diagnosticframe.menubar)
-            self.diagnosticframe.page_title_label.grid(column=0, row=0, padx=100, pady=5,sticky="NSEW", columnspan=4)
+            self.diagnosticframe.page_title_label.grid(column=0, row=0, padx=230, pady=5,sticky="NSEW", columnspan=4)
+            self.diagnosticframe.voltage_canvas.get_tk_widget().grid(column=0, row=1, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
+            self.diagnosticframe.current_canvas.get_tk_widget().grid(column=0, row=4, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
+            self.diagnosticframe.phase_canvas.get_tk_widget().grid(column=0, row=7, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
+            self.diagnosticframe.statusbar.grid(column=0, row=13, padx=5, pady=0, sticky="WES", columnspan=4)
+            self.diagnosticframe.reset_button.grid(column=0, row=12, padx=5, pady=5, sticky="WES", columnspan=4)
             self.diagnosticframe.tkraise()		
-    #    print(cont)
-		
-        #frame = self.frames[cont]	
 		
 			
 class ConnectionFrame(Frame):
@@ -150,8 +162,8 @@ class ConnectionFrame(Frame):
         self.__create_connection()
 		
 		#Code for setting the app name and icon
-        controller.title("Smart Power Meter")
-        controller.call('wm', 'iconphoto', self.winfo_toplevel()._w, tk.PhotoImage(file='baseline_power_black_24dp.png'))
+        #controller.title("Smart Power Meter")
+        #controller.call('wm', 'iconphoto', self.winfo_toplevel()._w, tk.PhotoImage(file='baseline_power_black_24dp.png'))
 		#
 		
 		#code for adding a submenu to swap frames
@@ -176,7 +188,7 @@ class ConnectionFrame(Frame):
 		
 		#create the statusbar
         self.statusbar = Label(self.winfo_toplevel(), text="Connection Status: Disconnected", relief=SUNKEN)
-        self.statusbar.grid(column=0, row=7, padx=5, pady=5, sticky="WE", columnspan=4)
+        self.statusbar.grid(column=0, row=7, padx=5, pady=5, sticky="WES", columnspan=4)
 		
 		#create the page title
         self.page_title_label = ttk.Label(self.winfo_toplevel(), text="Connections Manager")
@@ -393,8 +405,8 @@ class DiagnosticFrame(Frame):
         Frame.__init__(self, parent)
 
 		#Code for setting the app name and icon
-        controller.title("Smart Power Meter")
-        controller.call('wm', 'iconphoto', self.winfo_toplevel()._w, tk.PhotoImage(file='baseline_power_black_24dp.png'))
+        #controller.title("Smart Power Meter")
+        #controller.call('wm', 'iconphoto', self.winfo_toplevel()._w, tk.PhotoImage(file='baseline_power_black_24dp.png'))
 		#
 		
 		#code for adding a submenu to swap frames
@@ -418,10 +430,89 @@ class DiagnosticFrame(Frame):
 		
 		#create the page title
         self.page_title_label = ttk.Label(self.winfo_toplevel(), text="System Diagnostics")
-        self.page_title_label.grid(column=0, row=0, padx=100, pady=5,sticky="NSEW", columnspan=4)		
+        self.page_title_label.grid(column=0, row=0, padx=230, pady=5,sticky="NSEW", columnspan=4)		
         self.page_title_label.config(font=("Calibri", 18))	
+		
+		#graph for the voltage transducer
+        self.figure_voltage = Figure(figsize=(6, 2.3), dpi=80)
+        voltage_graph = self.figure_voltage.add_subplot(1, 1, 1)
+        voltage_graph.set_title('Voltage Transducer Measurement')
+		
+        voltage_graph.plot(0.5, 0.3, color="red", marker="o", linestyle="")
 
+        x = [ 0.1, 0.2, 0.3 ]
+        y = [ -0.1, -0.2, -0.3 ]
+        voltage_graph.plot(x, y, color="blue", marker="x", linestyle="")
+    
+        self.voltage_canvas = FigureCanvasTkAgg(self.figure_voltage, controller)
+        self.voltage_canvas.get_tk_widget().grid(column=0, row=1, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
+		
+        #self.canvas = FigureCanvasTkAgg(self.figure_voltage, controller)
+        #self.canvas.get_tk_widget().grid(column=0, row=1, padx=10, pady=5,sticky="WE", columnspan=4, rowspan=3)
+		
+        #self.voltage_max_label = ttk.Label(self.winfo_toplevel(), text="Maximum: ")
+        #self.voltage_max_label.grid(column=0, row=4, padx=5, pady=5, sticky="W", columnspan=2)
+		
+        #self.voltage_newest_label = ttk.Label(self.winfo_toplevel(), text="Newest: ")
+        #self.voltage_newest_label.grid(column=2, row=4, padx=5, pady=5, sticky="W", columnspan=2)	
+		
+		#graph for the current transducer
+        self.figure_current = Figure(figsize=(6, 2.3), dpi=80)
+        current_graph = self.figure_current.add_subplot(1, 1, 1)
+        current_graph.set_title('Current Transducer Measurement')
 
+        current_graph.plot(0.5, 0.3, color="red", marker="o", linestyle="")
+
+        x = [ 0.1, 0.2, 0.3 ]
+        y = [ -0.1, -0.2, -0.3 ]
+        current_graph.plot(x, y, color="blue", marker="x", linestyle="")
+
+        self.current_canvas = FigureCanvasTkAgg(self.figure_current, controller)
+        self.current_canvas.get_tk_widget().grid(column=0, row=4, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
+		
+        #self.voltage_max_label = ttk.Label(self.winfo_toplevel(), text="Maximum: ")
+        #self.voltage_max_label.grid(column=0, row=8, padx=5, pady=5, sticky="W", columnspan=2)
+
+        #self.voltage_max_entry = ttk.Entry(self.winfo_toplevel())
+        #self.voltage_max_entry.grid(column=1, row=8, padx=5, pady=5, sticky="E", columnspan=1)
+		
+        #self.voltage_newest_label = ttk.Label(self.winfo_toplevel(), text="Newest: ")
+        #self.voltage_newest_label.grid(column=2, row=8, padx=5, pady=5, sticky="W", columnspan=2)	
+		
+        #self.voltage_newest_entry = ttk.Entry(self.winfo_toplevel())
+        #self.voltage_newest_entry.grid(column=1, row=8, padx=5, pady=5, sticky="E", columnspan=1)
+
+		#graph for the phase transducer
+        self.figure_phase = Figure(figsize=(6, 2.3), dpi=80)
+        phase_graph = self.figure_phase.add_subplot(1, 1, 1)
+        phase_graph.set_title('Phase Transducer Measurement')
+
+        phase_graph.plot(0.5, 0.3, color="red", marker="o", linestyle="")
+
+        x = [ 0.1, 0.2, 0.3 ]
+        y = [ -0.1, -0.2, -0.3 ]	
+        phase_graph.plot(x, y, color="blue", marker="x", linestyle="")
+
+        self.phase_canvas = FigureCanvasTkAgg(self.figure_phase, controller)
+        self.phase_canvas.get_tk_widget().grid(column=0, row=7, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
+		
+		#create the statusbar
+        self.statusbar = Label(self.winfo_toplevel(), text="Trip Status: Not Tripped", relief=SUNKEN)
+        self.statusbar.grid(column=0, row=13, padx=5, pady=5, sticky="WES", columnspan=4)
+
+        self.reset_button = ttk.Button(self.winfo_toplevel(), text="Reset Trip Switch")
+        self.reset_button.grid(column=0, row=12, padx=5, pady=5, sticky="WES", columnspan=4)
+        #self.phase_max_label = ttk.Label(self.winfo_toplevel(), text="Maximum: ")
+        #self.phase_max_label.grid(column=0, row=12, padx=5, pady=5, sticky="W", columnspan=2)
+		
+        #self.phase_max_entry = ttk.Entry(self.winfo_toplevel())
+        #self.phase_max_entry.grid(column=1, row=12, padx=5, pady=5, sticky="E", columnspan=1)
+		
+        #self.phase_newest_label = ttk.Label(self.winfo_toplevel(), text="Newest: ")
+        #self.phase_newest_label.grid(column=2, row=12, padx=5, pady=5, sticky="W", columnspan=2)
+
+        #self.phase_newest_entry = ttk.Entry(self.winfo_toplevel())
+        #self.phase_newest_entry.grid(column=3, row=12, padx=5, pady=5, sticky="E", columnspan=1)	
 	
 class Main:
     def __init__(self):
