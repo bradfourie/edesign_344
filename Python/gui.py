@@ -14,49 +14,59 @@ class App(tk.Tk):
     connectframe = -1
     diagnosticframe = -1
     container_global = -1
+    voltage_measurements = []
+    current_measurements = []
+    phase_measurements = []
+    trip_status = -1
 	
     def __init__(self, *args, **kwargs):    
         tk.Tk.__init__(self, *args, **kwargs)
         container = tk.Frame(self)
         container.grid(row=0, column = 0, sticky='nsew')
-		
+
+        self.__create_connection()
         self.container_global = container
 		
         self.title("Smart Power Meter")
         self.call('wm', 'iconphoto', self.winfo_toplevel()._w, tk.PhotoImage(file='baseline_power_black_24dp.png'))
-        	
+        
         self.geometry("655x660")
         self.resizable(False, False)
-		
-        #for F in (StartFrame, ConnectionFrame, DiagnosticFrame):
-        #    frame = F(container, self)
-        #    self.frames[F] = frame
-        #    frame.grid(row=0, column = 0, sticky='nsew')
-        container.frame1= ConnectionFrame(container, self)
-        container.frame1.grid(row=1, column = 0, sticky='NEWS')	
-		
-        #container.frame1.page_title_label.grid_forget()	
-        #container.frame1.page_title_label.grid_forget()
-		
-        self.connectframe = container.frame1
-		
-        #container.frame2= DiagnosticFrame(container, self)
-        #container.frame2.grid(row=2, column = 0, sticky='nsew')	
-        #container.frame2.grid_forget()
 
-        #self.show_frame(DiagnosticFrame)	
-        #self.show_connection_frame()		
+        self.connectframe= ConnectionFrame(container, self)
+        self.connectframe.grid(row=1, column = 0, sticky='NEWS')	
+		
+        self.after(1000, self.sample_data)#self.printSerialReturn())
+		
+    def sample_data(self):
+        if self.connection.is_connected():
+           self.parse_input()
+        self.after(1000, self.sample_data)#self.printSerialReturn())
+		
+    def parse_input(self):
+        sleep(0.02)
+        print(self.connection.receive() )
+
 		
     def show_connection_frame(self):
         if self.diagnosticframe != -1:
-            self.diagnosticframe.page_title_label.grid_forget()
-            self.diagnosticframe.menubar.grid_forget()
-            self.diagnosticframe.voltage_canvas.get_tk_widget().grid_forget()
-            self.diagnosticframe.current_canvas.get_tk_widget().grid_forget()			
-            self.diagnosticframe.phase_canvas.get_tk_widget().grid_forget()
-            self.diagnosticframe.statusbar.grid_forget()
-            self.diagnosticframe.reset_button.grid_forget()
+            self.remove_grid_diagnostic_frame()
 			
+        self.setup_grid_connection_frame()
+        self.connectframe.tkraise()	
+		
+    def show_diagnostic_frame(self):
+        self.remove_grid_connection_frame()	
+		
+        if self.diagnosticframe == -1:
+            self.diagnosticframe= DiagnosticFrame(self.container_global, self)
+            self.diagnosticframe.grid(row=2, column = 0, sticky='nsew')		
+            self.diagnosticframe.tkraise()
+        else:
+            self.setup_grid_diagnostic_frame()
+            self.diagnosticframe.tkraise()	
+
+    def setup_grid_connection_frame(self):
         self.config(menu=self.connectframe.menubar)
         self.connectframe.statusbar.grid(column=0, row=7, padx=5, pady=5, sticky="WES", columnspan=4)
         self.connectframe.page_title_label.grid(column=0, row=0, padx=100, pady=5, columnspan=4)			
@@ -71,20 +81,8 @@ class App(tk.Tk):
         self.connectframe.clear_button.grid(column=0, row=6,padx=5, pady=5, sticky="WE", columnspan=2)
         self.connectframe.Uptime_button.grid(column=2, row=6, padx=5, pady=5, sticky="WE", columnspan=2)
         self.connectframe.return_text.grid(column=0, row=5, padx=5, pady=5, sticky="WE", columnspan=4)	
-        #self.connectframe.return_text.config(state='disabled')
-        #self.connectframe.return_text.grid(column=0, row=5, padx=5, pady=5, sticky="WE", columnspan=4)
-        #self.connectframe.return_text.see("end")
-        self.connectframe.tkraise()		
 		
-    #    print(cont)
-		
-        #frame = self.frames[cont]	)	
-
-   # def create_start_frame(self, container):
-    #    self.frame1 = StartFrame(container, self)	
-     #   self.frame1.grid(row=0, column = 0, sticky='nsew')	
-
-    def show_diagnostic_frame(self):
+    def remove_grid_connection_frame(self):
         self.connectframe.menubar.grid_forget()	
         self.connectframe.statusbar.grid_forget()
         self.connectframe.page_title_label.grid_forget()	
@@ -98,58 +96,61 @@ class App(tk.Tk):
         self.connectframe.request_button.grid_forget()
         self.connectframe.clear_button.grid_forget()
         self.connectframe.Uptime_button.grid_forget()
-        self.connectframe.return_text.grid_forget()	
+        self.connectframe.return_text.grid_forget()	 
+
+    def setup_grid_diagnostic_frame(self):
+        self.config(menu=self.diagnosticframe.menubar)
+        self.diagnosticframe.page_title_label.grid(column=0, row=0, padx=230, pady=5,sticky="NSEW", columnspan=4)
+        self.diagnosticframe.voltage_canvas.get_tk_widget().grid(column=0, row=1, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
+        self.diagnosticframe.current_canvas.get_tk_widget().grid(column=0, row=4, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
+        self.diagnosticframe.phase_canvas.get_tk_widget().grid(column=0, row=7, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
+        self.diagnosticframe.statusbar.grid(column=0, row=13, padx=5, pady=0, sticky="WES", columnspan=4)
+        self.diagnosticframe.reset_button.grid(column=0, row=12, padx=5, pady=5, sticky="WES", columnspan=4)	
 		
-        if self.diagnosticframe == -1:
-            self.diagnosticframe= DiagnosticFrame(self.container_global, self)
-            self.diagnosticframe.grid(row=2, column = 0, sticky='nsew')		
-            self.diagnosticframe.tkraise()
-        else:
-            self.config(menu=self.diagnosticframe.menubar)
-            self.diagnosticframe.page_title_label.grid(column=0, row=0, padx=230, pady=5,sticky="NSEW", columnspan=4)
-            self.diagnosticframe.voltage_canvas.get_tk_widget().grid(column=0, row=1, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
-            self.diagnosticframe.current_canvas.get_tk_widget().grid(column=0, row=4, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
-            self.diagnosticframe.phase_canvas.get_tk_widget().grid(column=0, row=7, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
-            self.diagnosticframe.statusbar.grid(column=0, row=13, padx=5, pady=0, sticky="WES", columnspan=4)
-            self.diagnosticframe.reset_button.grid(column=0, row=12, padx=5, pady=5, sticky="WES", columnspan=4)
-            self.diagnosticframe.tkraise()		
-		
-			
-class ConnectionFrame(Frame):
+    def remove_grid_diagnostic_frame(self):
+        self.diagnosticframe.page_title_label.grid_forget()
+        self.diagnosticframe.menubar.grid_forget()
+        self.diagnosticframe.voltage_canvas.get_tk_widget().grid_forget()
+        self.diagnosticframe.current_canvas.get_tk_widget().grid_forget()			
+        self.diagnosticframe.phase_canvas.get_tk_widget().grid_forget()
+        self.diagnosticframe.statusbar.grid_forget()
+        self.diagnosticframe.reset_button.grid_forget() 				
+
     def __create_connection(self):
         self.connection = BeetleConnection()
 
         def connection_callback(state):
             if state == ConnectionStatus.DISCONNECTED:
-                self.event_disconnected()
+                self.connectframe.event_disconnected(self)
             elif state == ConnectionStatus.CONNECTED:
-                self.event_connected()
+                self.connectframe.event_connected(self)
             elif state == ConnectionStatus.FAILED_TO_CONNECT:
-                self.event_failed_to_connect()
+                self.connectframe.event_failed_to_connect(self)
             elif state == ConnectionStatus.DISCONNECTED_TIMEOUT:
-                self.event_disconnected_timeout()
+                self.connectframe.event_disconnected_timeout(self)
             elif state == ConnectionStatus.DISCONNECTED_ERROR:
-                self.event_disconnected_error()
+                self.connectframe.event_disconnected_error(self)
             else:
                 raise Exception("Unhandled connection callback")
 
         self.connection.register_status_callback(connection_callback)
-
-    def __set_connected_button(self):
+			
+class ConnectionFrame(Frame):
+    def __set_connected_button(self, controller):
         def connect_button_callback():
-            self.connection.disconnect()
+            controller.connection.disconnect()
 
-        self.connection.write(b"U")
-        self.connection.write(b"\n")
+        controller.connection.write(b"U")
+        controller.connection.write(b"\n")
 
         self.connect_button["command"] = connect_button_callback
         self.connect_button["text"] = "Disconnect"
         self.device_picker["state"] = "disabled"
 
-    def __set_disconnected_button(self):
+    def __set_disconnected_button(self, controller):
         def connect_button_callback():
             device = self.device_picker.get()
-            self.connection.connect(device)
+            controller.connection.connect(device)
 
         self.connect_button["command"] = connect_button_callback
         self.connect_button["text"] = "Connect"
@@ -159,13 +160,7 @@ class ConnectionFrame(Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 		
-        self.__create_connection()
-		
-		#Code for setting the app name and icon
-        #controller.title("Smart Power Meter")
-        #controller.call('wm', 'iconphoto', self.winfo_toplevel()._w, tk.PhotoImage(file='baseline_power_black_24dp.png'))
-		#
-		
+        self.controller = controller
 		#code for adding a submenu to swap frames
 		#code for main connection frame)
 		#create the menubar
@@ -184,7 +179,6 @@ class ConnectionFrame(Frame):
         self.subMenu = Menu(self.menubar)
         self.menubar.add_cascade(label="Help",menu=self.subMenu)
         self.subMenu.add_command(label="About", command= about_project)
-		
 		
 		#create the statusbar
         self.statusbar = Label(self.winfo_toplevel(), text="Connection Status: Disconnected", relief=SUNKEN)
@@ -218,7 +212,7 @@ class ConnectionFrame(Frame):
         self.port_entry = ttk.Entry(self.winfo_toplevel())
         self.port_entry.grid(column=3, row=3,padx=5, pady=5, sticky="E", columnspan=1)
 		#row4
-        self.request_button = ttk.Button(self.winfo_toplevel(),command = self.SendRequest, text="Send Request")
+        self.request_button = ttk.Button(self.winfo_toplevel(),text="Send Request")
         self.request_button.grid(column=0, row=4,padx=5, pady=5, sticky="WE", columnspan=4)
 		#row 5
 		#see below 
@@ -227,126 +221,142 @@ class ConnectionFrame(Frame):
         self.clear_button = ttk.Button(self.winfo_toplevel(), text="Clear")
         self.clear_button.grid(column=0, row=6,padx=5, pady=5, sticky="WE", columnspan=2)		
 		
-        self.Uptime_button = ttk.Button(self.winfo_toplevel(), command = self.UptimeReturn, text="Uptime")
+        self.Uptime_button = ttk.Button(self.winfo_toplevel(), text="Uptime")
         self.Uptime_button.grid(column=2, row=6, padx=5, pady=5, sticky="WE", columnspan=2)
 		
         self.return_text = Text(self.winfo_toplevel())
         self.return_text.config(state='disabled')
         self.return_text.grid(column=0, row=5, padx=5, pady=5, sticky="WE", columnspan=4)
         self.return_text.see("end")
-        self.clear()
+        self.clear(controller)
 
         self.DEBUGMODE = False
         self.after(2000, self.refresh_debug)#self.printSerialReturn())
-
+		
+        def uptime_callback():
+            self.UptimeReturn(controller)	
+        def send_request_callback():
+            self.SendRequest(controller)
         def clear_button_callback():
-            self.clear()
+            self.clear(controller)
 
         self.clear_button["command"] = clear_button_callback
+        self.request_button["command"] = send_request_callback		
+        self.Uptime_button["command"] = uptime_callback
 		
-
+		
     def refresh_debug(self):
-
-        if self.DEBUGMODE == True and self.connection.is_connected():
-            self.printSerialReturn()
+        if self.DEBUGMODE == True and self.controller.connection.is_connected():
+            self.printSerialReturn(self.controller)
         self.after(2000, self.refresh_debug)#self.printSerialReturn())
 
-    def event_connected(self):
+    def event_connected(self, controller):
         self.statusbar["text"] = "Connection Status: Connected"
 
-        self.__set_connected_button()
+        self.__set_connected_button(controller)
 
-    def event_disconnected(self):
+    def event_disconnected(self, controller):
         self.statusbar["text"] = "Connection Status: Disconnected"
 
-        self.__set_disconnected_button()
+        self.__set_disconnected_button(controller)
 
-    def event_disconnected_timeout(self):
+    def event_disconnected_timeout(self, controller):
         self.statusbar["text"] = "Connection Status: Disconnected (Timeout)"
 
-        self.__set_disconnected_button()
+        self.__set_disconnected_button(controller)
 
-    def event_disconnected_error(self):
+    def event_disconnected_error(self, controller):
         self.statusbar["text"] = "Connection Status: Disconnected (Error)"
 
-        self.__set_disconnected_button()
+        self.__set_disconnected_button(controller)
 
-    def event_failed_to_connect(self):
+    def event_failed_to_connect(self, controller):
         self.statusbar["text"] = "Connection Status: Disconnected (Failed to connect)"
 
-        self.__set_disconnected_button()
+        self.__set_disconnected_button(controller)
 
-    def SendRequest(self):
+    def SendRequest(self, controller):
         CommandType = self.type_entry.get()  #String is saved in Command
         CommandPort = self.port_entry.get()
 
-        if not self.connection.is_connected():
-            self.connection_status_label["text"] = "Cannot write when not connected"
+        if not controller.connection.is_connected():
+            txt = "Cannot write when not connected"
+            self.return_text.config(state='normal')
+            self.return_text.insert(END,txt+"\n")
+            self.return_text.config(state='disabled')
+            self.return_text.see("end")
             return
 
         # Entry validation:
-        if CommandType not in ['0','1','2','X','x']:
-            txt = "Please enter valid type (0,1,2,X)"
-            self.connection_status_label["text"] = txt
+        if CommandType not in ['0','1','2','X','x', 'U', 'u']:
+            txt = "Please enter valid type (0,1,2,X,U)"
+            self.return_text.config(state='normal')
+            self.return_text.insert(END,txt+"\n")
+            self.return_text.config(state='disabled')
+            self.return_text.see("end")
             return
-
-        else:
-            self.connection_status_label["text"] = ''
 
         if CommandType == '1':
             if CommandPort not in ['0','1','2']:
                 txt = "Please enter valid analogue port number (0,1,2)"
-                self.connection_status_label["text"] = txt
+                self.return_text.config(state='normal')
+                self.return_text.insert(END,txt+"\n")
+                self.return_text.config(state='disabled')
+                self.return_text.see("end")
                 return
 
         elif CommandType == '2':
             if CommandPort not in ['0','1','2']:
                 txt = "Please enter valid digital port number (0,1,2)"
-                self.connection_status_label["text"] = txt
+                self.return_text.config(state='normal')
+                self.return_text.insert(END,txt+"\n")
+                self.return_text.config(state='disabled')
+                self.return_text.see("end")
                 return
 
 
         elif CommandType in ['x','X']:
             if CommandPort not in ['0','1']:
                 txt = "Please enter 0 (debug off) or 1 (debug on) in port field"
-                self.connection_status_label["text"] = txt
+                self.return_text.config(state='normal')
+                self.return_text.insert(END,txt+"\n")
+                self.return_text.config(state='disabled')
+                self.return_text.see("end")
                 return
             else:
                 if CommandPort == '1':
                     self.DEBUGMODE = True
                     self.return_text.config(state='normal')
-                    self.return_text.insert(END,"\n"+'Debug-Mode On')
+                    self.return_text.insert(END,'Debug-Mode On'+"\n")
                     self.return_text.config(state='disabled')
                     self.return_text.see("end")
-
-                    self.connection.write(CommandType.encode('utf-8'))
-                    self.connection.write(CommandPort.encode('utf-8'))
+ 
+                    controller.connection.write(CommandType.encode('utf-8'))
+                    controller.connection.write(CommandPort.encode('utf-8'))
                 else:
                     self.DEBUGMODE = False
                     self.type_entry.config(state='normal')
 
                     self.return_text.config(state='normal')
-                    self.return_text.insert(END,"\n"+'Debug-Mode Off')
+                    self.return_text.insert(END,'Debug-Mode Off'+"\n")
                     self.return_text.config(state='disabled')
                     self.return_text.see("end")
 
-                    self.connection.write(CommandType.encode('utf-8'))
-                    self.connection.write(CommandPort.encode('utf-8'))
-        else:
-            self.connection_status_label["text"] = ''
+                    controller.connection.write(CommandType.encode('utf-8'))
+                    controller.connection.write(CommandPort.encode('utf-8'))
+					 
+        controller.connection.write(CommandType.encode('utf-8'))
+        controller.connection.write(CommandPort.encode('utf-8'))
+        controller.connection.write(b"\n")
+        self.printSerialReturn(controller)
 
-        self.connection.write(CommandType.encode('utf-8'))
-        self.connection.write(CommandPort.encode('utf-8'))
-        self.connection.write(b"\n")
-        self.printSerialReturn()
-
-    def printSerialReturn(self):
+    def printSerialReturn(self, controller):
         sleep(0.02)
-        OutputText = self.CleanList(self.connection.receive())
+        OutputText = self.CleanList(controller.connection.receive())
 
         if OutputText != '[]':
             self.return_text.config(state='normal')
-            self.return_text.insert(END,"\n"+OutputText)
+            self.return_text.insert(END,OutputText+"\n")
             self.return_text.config(state='disabled')
             self.return_text.see("end")
 
@@ -361,33 +371,37 @@ class ConnectionFrame(Frame):
         OutputString += "]"
         return OutputString
 
-    def UptimeReturn(self):
-        if self.connection.is_connected():
-            self.connection.write(b"U")
-            self.connection.write(b"\n")
-            self.printSerialReturn()
+    def UptimeReturn(self, controller):
+        if controller.connection.is_connected():
+            controller.connection.write(b"U")
+            controller.connection.write(b"\n")
+            self.printSerialReturn(controller)
+        else:
+            txt = "No device has been connected"
+            self.return_text.config(state='normal')
+            self.return_text.insert(END,txt+"\n")
+            self.return_text.config(state='disabled')
+            self.return_text.see("end")
 
-    def clear(self):
-
-        if self.connection.is_connected():
-
+    def clear(self, controller):
+        if controller.connection.is_connected():
             self.return_text.config(state='normal')
             self.return_text.delete(1.0,END)
             self.return_text.config(state='disabled')
-            self.type_entry.delete(0,'end')
-            self.port_entry.delete(0,'end')
-            self.type_entry.config(state='normal')
-            self.port_entry.config(state='normal')
-            self.request_button.config(state='normal')
+            #self.type_entry.delete(0,'end')
+            #self.port_entry.delete(0,'end')
+            #self.type_entry.config(state='normal')
+            #self.port_entry.config(state='normal')
+            #self.request_button.config(state='normal')
         else:
             self.return_text.config(state='normal')
             self.return_text.delete(1.0,END)
             self.return_text.config(state='disabled')
-            self.type_entry.delete(0,'end')
-            self.port_entry.delete(0,'end')
-            self.type_entry.config(state='normal')
-            self.port_entry.config(state='normal')
-            self.request_button.config(state='normal')
+            #self.type_entry.delete(0,'end')
+            #self.port_entry.delete(0,'end')
+            #self.type_entry.config(state='normal')
+            #self.port_entry.config(state='normal')
+            #self.request_button.config(state='normal')
 
             self.device_list = BeetleConnection.possible_connections()
 
@@ -397,17 +411,12 @@ class ConnectionFrame(Frame):
             self.device_picker["values"] = possible_values
             if len(possible_values) > 0:
                 self.device_picker.current(0)
-            self.event_disconnected()
+            self.event_disconnected(controller)
    
 class DiagnosticFrame(Frame):
 
     def __init__(self, parent, controller):
         Frame.__init__(self, parent)
-
-		#Code for setting the app name and icon
-        #controller.title("Smart Power Meter")
-        #controller.call('wm', 'iconphoto', self.winfo_toplevel()._w, tk.PhotoImage(file='baseline_power_black_24dp.png'))
-		#
 		
 		#code for adding a submenu to swap frames
 		#code for main connection frame)
@@ -447,15 +456,6 @@ class DiagnosticFrame(Frame):
         self.voltage_canvas = FigureCanvasTkAgg(self.figure_voltage, controller)
         self.voltage_canvas.get_tk_widget().grid(column=0, row=1, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
 		
-        #self.canvas = FigureCanvasTkAgg(self.figure_voltage, controller)
-        #self.canvas.get_tk_widget().grid(column=0, row=1, padx=10, pady=5,sticky="WE", columnspan=4, rowspan=3)
-		
-        #self.voltage_max_label = ttk.Label(self.winfo_toplevel(), text="Maximum: ")
-        #self.voltage_max_label.grid(column=0, row=4, padx=5, pady=5, sticky="W", columnspan=2)
-		
-        #self.voltage_newest_label = ttk.Label(self.winfo_toplevel(), text="Newest: ")
-        #self.voltage_newest_label.grid(column=2, row=4, padx=5, pady=5, sticky="W", columnspan=2)	
-		
 		#graph for the current transducer
         self.figure_current = Figure(figsize=(6, 2.3), dpi=80)
         current_graph = self.figure_current.add_subplot(1, 1, 1)
@@ -469,18 +469,6 @@ class DiagnosticFrame(Frame):
 
         self.current_canvas = FigureCanvasTkAgg(self.figure_current, controller)
         self.current_canvas.get_tk_widget().grid(column=0, row=4, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
-		
-        #self.voltage_max_label = ttk.Label(self.winfo_toplevel(), text="Maximum: ")
-        #self.voltage_max_label.grid(column=0, row=8, padx=5, pady=5, sticky="W", columnspan=2)
-
-        #self.voltage_max_entry = ttk.Entry(self.winfo_toplevel())
-        #self.voltage_max_entry.grid(column=1, row=8, padx=5, pady=5, sticky="E", columnspan=1)
-		
-        #self.voltage_newest_label = ttk.Label(self.winfo_toplevel(), text="Newest: ")
-        #self.voltage_newest_label.grid(column=2, row=8, padx=5, pady=5, sticky="W", columnspan=2)	
-		
-        #self.voltage_newest_entry = ttk.Entry(self.winfo_toplevel())
-        #self.voltage_newest_entry.grid(column=1, row=8, padx=5, pady=5, sticky="E", columnspan=1)
 
 		#graph for the phase transducer
         self.figure_phase = Figure(figsize=(6, 2.3), dpi=80)
@@ -502,30 +490,9 @@ class DiagnosticFrame(Frame):
 
         self.reset_button = ttk.Button(self.winfo_toplevel(), text="Reset Trip Switch")
         self.reset_button.grid(column=0, row=12, padx=5, pady=5, sticky="WES", columnspan=4)
-        #self.phase_max_label = ttk.Label(self.winfo_toplevel(), text="Maximum: ")
-        #self.phase_max_label.grid(column=0, row=12, padx=5, pady=5, sticky="W", columnspan=2)
-		
-        #self.phase_max_entry = ttk.Entry(self.winfo_toplevel())
-        #self.phase_max_entry.grid(column=1, row=12, padx=5, pady=5, sticky="E", columnspan=1)
-		
-        #self.phase_newest_label = ttk.Label(self.winfo_toplevel(), text="Newest: ")
-        #self.phase_newest_label.grid(column=2, row=12, padx=5, pady=5, sticky="W", columnspan=2)
-
-        #self.phase_newest_entry = ttk.Entry(self.winfo_toplevel())
-        #self.phase_newest_entry.grid(column=3, row=12, padx=5, pady=5, sticky="E", columnspan=1)	
 	
 class Main:
     def __init__(self):
-        #self.window = Tk()
-        #self.connection_frame = ConnectionFrame(self)
-        #self.connection_frame.grid(row=0, sticky="NWE", columnspan=4)
-
-        #self.window.resizable(False, False)
-        #self.window.mainloop()
-		
-        #self.window = Tk()
-        #self.window.geometry("800x800")
-		
         app = App()
         app.mainloop()
 
