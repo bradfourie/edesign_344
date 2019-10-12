@@ -1,3 +1,5 @@
+#include <LiquidCrystal.h>
+
 // Serial communication setup
 constexpr long serial_baud_rate = 19200;
 constexpr auto serial_config = SERIAL_8E1;
@@ -35,7 +37,7 @@ void loop()
   ReceiveData();
   TransmitData();
   DebugCheck();
-  PollData();
+  //PollData();
 
   // LED receive notifier timeout
   if (millis() - time1 > 200) {
@@ -96,7 +98,7 @@ void TransmitData() {
           break;
         case '2' :
           Aread = analogRead(analogue_pins[2]);
-          output = (Aread / 1023) * 6.957 + 2.1; //voltage transducer
+          output = (Aread) * 0.034 + 1.5;; //voltage transducer
           break;
       }
       Serial.println(output);
@@ -126,6 +128,29 @@ void TransmitData() {
       MillisecondsUpdtime = millis();
       uptime();
     }
+  } else {
+    String output = "";
+
+    int Aread0 = analogRead(analogue_pins[0]);
+    delay(10);
+  
+    int Aread1 = analogRead(analogue_pins[1]);
+    delay(10);
+  
+    int Aread2 = analogRead(analogue_pins[2]);
+    delay(10);
+  
+    double phase_measurement = (double) 0.175953 *Aread0; //phase transducer
+    double current_measurement =  (double) 0.3434 * Aread1; //current transducer
+    double voltage_measurement = (double) (Aread2) * 0.034 + 1.5; //voltage transducer
+  
+    String yeet = "";
+    output = yeet + phase_measurement + ' ' + current_measurement + ' ' + voltage_measurement;
+  
+    if (millis() - time3 > 1000) { // Wait 1 second hopefully
+      Serial.println(output);
+      time3 = millis();
+    }
   }
   newData = false;
 }
@@ -143,13 +168,14 @@ void DebugCheck() {
                   ',' + "D0:" + ReturnDigitalRead(digitalRead(digital_pins[0])) + ',' + "D1:" + ReturnDigitalRead(digitalRead(digital_pins[1])) +
                   ',' + "D2:" + ReturnDigitalRead(digitalRead(digital_pins[2]));
     if (millis() - time2 > 2000) { // LED receive notifier timeout
+      Serial.println("X");
       Serial.println(DebugOutput);
       time2 = millis();
     }
   }
 }
 
-void PollData() {
+/*void PollData() {
   String output = "";
 
   int Aread0 = analogRead(analogue_pins[0]);
@@ -172,7 +198,7 @@ void PollData() {
     Serial.println(output);
     time3 = millis();
   }
-}
+}*/
 
 String ReturnDigitalRead(int Input) {
   if (Input == 0) {
@@ -198,12 +224,18 @@ void uptime()
   secs = secs - (mins * 60); //subtract the coverted seconds to minutes in order to display 59 secs max
   mins = mins - (hours * 60); //subtract the coverted minutes to hours in order to display 59 minutes max
   hours = hours - (days * 24); //subtract the coverted hours to days in order to display 23 hours max
+  
+  String UptimeOutput = "";
+  String comma = ",";
+  UptimeOutput = hours + comma + mins + comma + secs ;
+  Serial.println("U");
+  Serial.println(UptimeOutput);
   //Display results
-  Serial.print("Uptime : ");
+  /*Serial.print("Uptime : ");
   Serial.print(hours);
   Serial.print(":");
   Serial.print(mins);
   Serial.print(":");
-  Serial.println(secs);
+  Serial.println(secs);*/
 }
 
