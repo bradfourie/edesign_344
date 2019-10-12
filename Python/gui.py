@@ -6,9 +6,11 @@ import tkinter as tk
 from time import sleep
 
 import matplotlib
-matplotlib.use("TkAgg")
+matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
+import matplotlib.animation as animation
+from matplotlib import style
 
 class App(tk.Tk):
     connectframe = -1
@@ -17,6 +19,8 @@ class App(tk.Tk):
     voltage_measurements = []
     current_measurements = []
     phase_measurements = []
+    time_measurements = []
+    runtime = -1
     trip_status = -1
 	
     def __init__(self, *args, **kwargs):    
@@ -33,24 +37,63 @@ class App(tk.Tk):
         self.geometry("655x660")
         self.resizable(False, False)
 
+        self.diagnosticframe= DiagnosticFrame(self.container_global, self)
+        self.diagnosticframe.grid(row=2, column = 0, sticky='NEWS')
+		
         self.connectframe= ConnectionFrame(container, self)
         self.connectframe.grid(row=1, column = 0, sticky='NEWS')	
+		
+        self.remove_grid_diagnostic_frame()
 		
         self.after(1000, self.sample_data)#self.printSerialReturn())
 		
     def sample_data(self):
         if self.connection.is_connected():
            self.parse_input()
-        self.after(1000, self.sample_data)#self.printSerialReturn())
+        self.after(1000, self.sample_data)
+        self.runtime=self.runtime+1
 		
     def parse_input(self):
-        sleep(0.02)
-        print(self.connection.receive() )
-
+        sleep(0.05)
+        input_list = self.connection.receive()
+        print(input_list)
+        allocated = False
+        for x in range(len(input_list)): 
+            if(input_list[x] == 'U\r'): #uptime condition
+                self.connectframe.writeToScreen(input_list[x] + ', ' + input_list[x+1])
+                allocated = True
+            if(input_list[x] == 'X\r'): #debug condition
+                self.connectframe.writeToScreen(input_list[x] + ', ' + input_list[x+1])
+                allocated = True
+            if(input_list[x] == '0\r' and input_list[x-1] != '0\r' and input_list[x-1] != '1\r' and input_list[x-1] != '2\r'):	#student number condition
+                self.connectframe.writeToScreen(input_list[x] + ', ' + input_list[x+1] )		
+                allocated = True
+            if(input_list[x] == '1\r' and input_list[x-1] != '0\r' and input_list[x-1] != '1\r' and input_list[x-1] != '2\r'):	#analog reading condition
+                self.connectframe.writeToScreen(input_list[x] + ', ' + input_list[x+1] + ', ' + input_list[x+2])	
+                allocated = True				
+            if(input_list[x] == '2\r' and input_list[x-1] != '0\r' and input_list[x-1] != '1\r' and input_list[x-1] != '2\r'):	#digital reading condition
+                self.connectframe.writeToScreen(input_list[x] + ', ' + input_list[x+1] + ', ' + input_list[x+2])	
+                allocated = True				
+            if allocated == False and input_list[x] != "[]": 
+                self.update_live_data(input_list[x])
+                allocated = True	
 		
+    def update_live_data(self, input_string):
+        measurements = input_string.split()
+        self.phase_measurements.append(float(measurements[0]))
+        self.current_measurements.append(float(measurements[1]))
+        self.voltage_measurements.append(float(measurements[2]))
+        self.time_measurements.append(self.runtime)
+        if(self.runtime > 10):
+            self.phase_measurements.pop(0)
+            self.current_measurements.pop(0)
+            self.voltage_measurements.pop(0)
+            self.time_measurements.pop(0)
+        #print(self.runtime)
+        self.diagnosticframe.animate(self)
+			
     def show_connection_frame(self):
-        if self.diagnosticframe != -1:
-            self.remove_grid_diagnostic_frame()
+        self.remove_grid_diagnostic_frame()
 			
         self.setup_grid_connection_frame()
         self.connectframe.tkraise()	
@@ -58,13 +101,8 @@ class App(tk.Tk):
     def show_diagnostic_frame(self):
         self.remove_grid_connection_frame()	
 		
-        if self.diagnosticframe == -1:
-            self.diagnosticframe= DiagnosticFrame(self.container_global, self)
-            self.diagnosticframe.grid(row=2, column = 0, sticky='nsew')		
-            self.diagnosticframe.tkraise()
-        else:
-            self.setup_grid_diagnostic_frame()
-            self.diagnosticframe.tkraise()	
+        self.setup_grid_diagnostic_frame()
+        self.diagnosticframe.tkraise()	
 
     def setup_grid_connection_frame(self):
         self.config(menu=self.connectframe.menubar)
@@ -274,6 +312,11 @@ class ConnectionFrame(Frame):
         self.statusbar["text"] = "Connection Status: Disconnected (Failed to connect)"
 
         self.__set_disconnected_button(controller)
+		
+    def re_enable_send_button(self):
+        self.statusbar["text"] = "Connection Status: Disconnected (Failed to connect)"
+
+        self.__set_disconnected_button(controller)
 
     def SendRequest(self, controller):
         CommandType = self.type_entry.get()  #String is saved in Command
@@ -349,17 +392,29 @@ class ConnectionFrame(Frame):
         controller.connection.write(CommandPort.encode('utf-8'))
         controller.connection.write(b"\n")
         self.printSerialReturn(controller)
+        #print("now parsing your request")
 
     def printSerialReturn(self, controller):
         sleep(0.02)
-        OutputText = self.CleanList(controller.connection.receive())
+        #OutputText = self.CleanList(controller.connection.receive())
+		
+        #print("got input")
+        #input_list = controller.connection.receive()
+        #for x in input_list:
+        #    print(x)
 
-        if OutputText != '[]':
-            self.return_text.config(state='normal')
-            self.return_text.insert(END,OutputText+"\n")
-            self.return_text.config(state='disabled')
-            self.return_text.see("end")
+        #if OutputText != '[]':
+        #    self.return_text.config(state='normal')
+        #    self.return_text.insert(END,OutputText+"\n")
+        #    self.return_text.config(state='disabled')
+        #    self.return_text.see("end")
 
+    def writeToScreen(self,str_input):
+        self.return_text.config(state='normal')
+        self.return_text.insert(END,"["+str_input+"]\n")
+        self.return_text.config(state='disabled')
+        self.return_text.see("end")        
+	
     def CleanList(self,InputList):
         OutputString = "["
         for returnstring in range(0,len(InputList)):
@@ -442,44 +497,40 @@ class DiagnosticFrame(Frame):
         self.page_title_label.grid(column=0, row=0, padx=230, pady=5,sticky="NSEW", columnspan=4)		
         self.page_title_label.config(font=("Calibri", 18))	
 		
+		
 		#graph for the voltage transducer
         self.figure_voltage = Figure(figsize=(6, 2.3), dpi=80)
-        voltage_graph = self.figure_voltage.add_subplot(1, 1, 1)
-        voltage_graph.set_title('Voltage Transducer Measurement')
+        self.voltage_graph = self.figure_voltage.add_subplot(1, 1, 1)
+        self.voltage_graph.set_title('Voltage Transducer Measurement')
+        self.voltage_graph.set_ylabel('Voltage (V)')
+        self.voltage_graph.set_xlabel('Time (s)')
 		
-        voltage_graph.plot(0.5, 0.3, color="red", marker="o", linestyle="")
-
-        x = [ 0.1, 0.2, 0.3 ]
-        y = [ -0.1, -0.2, -0.3 ]
-        voltage_graph.plot(x, y, color="blue", marker="x", linestyle="")
+        self.voltage_graph_line, = self.voltage_graph.plot(controller.time_measurements, controller.voltage_measurements, 'b', marker='o')	
     
         self.voltage_canvas = FigureCanvasTkAgg(self.figure_voltage, controller)
+        self.voltage_canvas.draw()		
         self.voltage_canvas.get_tk_widget().grid(column=0, row=1, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
 		
 		#graph for the current transducer
         self.figure_current = Figure(figsize=(6, 2.3), dpi=80)
-        current_graph = self.figure_current.add_subplot(1, 1, 1)
-        current_graph.set_title('Current Transducer Measurement')
+        self.current_graph = self.figure_current.add_subplot(1, 1, 1)
+        self.current_graph.set_title('Current Transducer Measurement')
+        self.current_graph.set_ylabel('Current (mA)')
+        self.current_graph.set_xlabel('Time (s)')
 
-        current_graph.plot(0.5, 0.3, color="red", marker="o", linestyle="")
-
-        x = [ 0.1, 0.2, 0.3 ]
-        y = [ -0.1, -0.2, -0.3 ]
-        current_graph.plot(x, y, color="blue", marker="x", linestyle="")
+        self.current_graph_line, = self.current_graph.plot(controller.time_measurements, controller.current_measurements, 'r', marker='o')
 
         self.current_canvas = FigureCanvasTkAgg(self.figure_current, controller)
         self.current_canvas.get_tk_widget().grid(column=0, row=4, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
 
 		#graph for the phase transducer
         self.figure_phase = Figure(figsize=(6, 2.3), dpi=80)
-        phase_graph = self.figure_phase.add_subplot(1, 1, 1)
-        phase_graph.set_title('Phase Transducer Measurement')
+        self.phase_graph = self.figure_phase.add_subplot(1, 1, 1)
+        self.phase_graph.set_title('Phase Transducer Measurement')
+        self.phase_graph.set_ylabel('Degrees (°)')
+        self.phase_graph.set_xlabel('Time (s)')
 
-        phase_graph.plot(0.5, 0.3, color="red", marker="o", linestyle="")
-
-        x = [ 0.1, 0.2, 0.3 ]
-        y = [ -0.1, -0.2, -0.3 ]	
-        phase_graph.plot(x, y, color="blue", marker="x", linestyle="")
+        self.phase_graph_line, = self.phase_graph.plot(controller.time_measurements, controller.phase_measurements, 'g', marker='o')
 
         self.phase_canvas = FigureCanvasTkAgg(self.figure_phase, controller)
         self.phase_canvas.get_tk_widget().grid(column=0, row=7, padx=10, pady=0,sticky="WE", columnspan=4, rowspan=3)
@@ -490,10 +541,40 @@ class DiagnosticFrame(Frame):
 
         self.reset_button = ttk.Button(self.winfo_toplevel(), text="Reset Trip Switch")
         self.reset_button.grid(column=0, row=12, padx=5, pady=5, sticky="WES", columnspan=4)
+		
+    def animate(self,controller):
+        if(controller.runtime >= 10):
+            self.voltage_graph.set_ylim(min(controller.voltage_measurements)-0.1, max(controller.voltage_measurements)+0.1)
+            self.voltage_graph.set_xlim(controller.time_measurements[0], controller.time_measurements[len(controller.time_measurements)-1])
+			
+            self.current_graph.set_ylim(min(controller.current_measurements)-0.1, max(controller.current_measurements)+0.1)
+            self.current_graph.set_xlim(controller.time_measurements[0], controller.time_measurements[len(controller.time_measurements)-1])
+			
+            self.phase_graph.set_ylim(min(controller.phase_measurements)-0.1, max(controller.phase_measurements)+0.1)
+            self.phase_graph.set_xlim(controller.time_measurements[0], controller.time_measurements[len(controller.time_measurements)-1])
+        else: 
+            self.voltage_graph.set_ylim(min(controller.voltage_measurements)-0.1, max(controller.voltage_measurements)+0.1)
+            self.voltage_graph.set_xlim(0, controller.time_measurements[len(controller.time_measurements)-1])
+			
+            self.current_graph.set_ylim(min(controller.current_measurements)-0.1, max(controller.current_measurements)+0.1)
+            self.current_graph.set_xlim(0, controller.time_measurements[len(controller.time_measurements)-1])
+			
+            self.phase_graph.set_ylim(min(controller.phase_measurements)-0.1, max(controller.phase_measurements)+0.1)
+            self.phase_graph.set_xlim(0, controller.time_measurements[len(controller.time_measurements)-1])
+			
+        self.voltage_graph_line.set_data(controller.time_measurements, controller.voltage_measurements)
+        self.voltage_canvas.draw()
+		
+        self.current_graph_line.set_data(controller.time_measurements, controller.current_measurements)
+        self.current_canvas.draw()
+		
+        self.phase_graph_line.set_data(controller.time_measurements, controller.phase_measurements)
+        self.phase_canvas.draw()
 	
 class Main:
     def __init__(self):
         app = App()
+        #ani = animation.FuncAnimation(app.diagnosticframe.figure_voltage, app.diagnosticframe.animate(app), interval=1000, blit = False)
         app.mainloop()
 
 Main()
