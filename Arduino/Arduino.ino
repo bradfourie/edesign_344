@@ -13,6 +13,7 @@ const String STUDENT_NUMBER = "20795629";
 unsigned long time1 = millis(); // LED receive indicator timer
 unsigned long time2 = millis(); // Debug mode timer
 unsigned long time3 = millis(); // Poll data timer
+unsigned long time4 = millis(); // 1KHz charge pump timer
 unsigned long MillisecondsUpdtime = 0; // Uptime Counter
 
 const byte numChars = 3; // two read bytes + end-of-line
@@ -20,6 +21,8 @@ char receivedChars[numChars]; // an array to store the received data
 
 boolean newData = false;
 boolean DebugMode = false;
+boolean chargePumpOut = false;
+boolean resetInit = false;
 
 String BinaryString = "";
 String Outputstring = "";
@@ -27,9 +30,13 @@ int Aread = 0;
 
 void setup() {
   Serial.begin(19200, serial_config);
-  pinMode(digital_pins[0], INPUT);
+  pinMode(digital_pins[0], OUTPUT);
   pinMode(digital_pins[1], INPUT);
-  pinMode(digital_pins[2], INPUT);
+  pinMode(digital_pins[2], OUTPUT);
+  //init SR Latch
+  digitalWrite(digital_pins[2], HIGH);
+  delay(100);
+  digitalWrite(digital_pins[2], LOW);
 }
 
 void loop()
@@ -44,7 +51,16 @@ void loop()
     digitalWrite(LED_BUILTIN, LOW);
     time1 = millis();
   }
-
+  // Charge pump timer 
+  if (millis() - time4 > 1) {
+    if(chargePumpOut){
+      digitalWrite(digital_pins[0], LOW);
+    }else{
+      digitalWrite(digital_pins[0], HIGH);
+    }
+    chargePumpOut = !chargePumpOut;
+    time4 = millis();
+  }
 }
 
 void ReceiveData() {
@@ -91,14 +107,26 @@ void TransmitData() {
         case '0' :
           Aread = analogRead(analogue_pins[0]);
           output = 0.175953 * Aread; //phase transducer
+          /*if(output > 45){
+            output = 90;
+          }*/
+          if(output < 1){
+            output = 0;
+          }
           break;
         case '1' :
           Aread = analogRead(analogue_pins[1]);
           output = 0.3434 * Aread; //current transducer
+          if(output < 1){
+            output = 0;
+          }
           break;
         case '2' :
           Aread = analogRead(analogue_pins[2]);
-          output = (Aread) * 0.034 + 1.5;; //voltage transducer
+          output = (Aread) * 0.034 + 0.7; //voltage transducer
+          if(output <= 0.7){
+            output = 0;
+          }
           break;
       }
       Serial.println(output);
@@ -123,11 +151,16 @@ void TransmitData() {
       }
     }
 
-    if ((receivedChars[0] == 'U' || receivedChars[0] == 'u') && DebugMode == false) // Return uptime if '?' is received
-    {
+    if ((receivedChars[0] == 'U' || receivedChars[0] == 'u') && DebugMode == false){
       MillisecondsUpdtime = millis();
       uptime();
     }
+    if(receivedChars[0] == 'T'){
+      digitalWrite(digital_pins[2], HIGH);
+      delay(100);
+      digitalWrite(digital_pins[2], LOW);
+    }
+    
   } else {
     String output = "";
 
@@ -139,14 +172,44 @@ void TransmitData() {
   
     int Aread2 = analogRead(analogue_pins[2]);
     delay(10);
+
+    //if(Aread0 <= 2){
+    //  Aread0 = 0;
+    //}
+    //if(Aread1 <= 5){
+    //  Aread1 = 0;
+    //}
+    //if(Aread2 <= 2){
+    //  Aread2 = 0;
+    //}
   
-    double phase_measurement = (double) 0.175953 *Aread0; //phase transducer
-    double current_measurement =  (double) 0.3434 * Aread1; //current transducer
-    double voltage_measurement = (double) (Aread2) * 0.034 + 1.5; //voltage transducer
-  
-    String yeet = "";
-    output = yeet + phase_measurement + ' ' + current_measurement + ' ' + voltage_measurement;
-  
+    //double phase_measurement = (double) 0.175953 *Aread0; //phase transducer
+    //double current_measurement =  (double) 0.3434 * Aread1; //current transducer
+    //double voltage_measurement = (double) (Aread2) * 0.034 + 0.7; //voltage transducer
+
+    double phase_measurement = (double) 0.175953 *Aread0 - 3; //phase transducer
+    
+    //double current_measurement =  (double) Aread1*5/1023; //current transducer
+    double current_measurement =  (double) Aread1*5/1023 * 73.455313 + 1.181447; //current transducer
+    
+    //double voltage_measurement = (double) Aread2*5/1023 * 6.8809865 + 0.92101109; //voltage transducer
+    double voltage_measurement = (double) Aread2*5/1023 *7.348095 + 0.2585596; //voltage transducer
+    
+    String reset_value = ReturnDigitalRead(digitalRead(digital_pins[1]));
+    
+    if(phase_measurement > 45 || phase_measurement <= 3){
+      phase_measurement = 0;
+    }
+    if(voltage_measurement <= 0.2585596){
+      voltage_measurement = 0;
+    }
+    if(current_measurement <= 1.181447){
+      current_measurement = 0;
+    }
+
+    String foobar = "";
+    output = foobar + phase_measurement + ' ' + current_measurement + ' ' + voltage_measurement + ' ' + reset_value;
+    
     if (millis() - time3 > 1000) { // Wait 1 second hopefully
       Serial.println(output);
       time3 = millis();
@@ -164,6 +227,16 @@ void DebugCheck() {
     delay(10);
     int Aread2 = analogRead(analogue_pins[2]);
     delay(10);
+
+    /*if(Aread0 <= 5){
+      Aread0 = 0;
+    }
+    if(Aread1 <= 5){
+      Aread1 = 0;
+    }
+    if(Aread1 <= 5){
+      Aread1 = 0;
+    }*/
     DebugOutput = STUDENT_NUMBER + ',' + "A0:" + Aread0 + ',' + "A1:" + Aread1 + ',' + "A2:" + Aread2 +
                   ',' + "D0:" + ReturnDigitalRead(digitalRead(digital_pins[0])) + ',' + "D1:" + ReturnDigitalRead(digitalRead(digital_pins[1])) +
                   ',' + "D2:" + ReturnDigitalRead(digitalRead(digital_pins[2]));
@@ -174,31 +247,6 @@ void DebugCheck() {
     }
   }
 }
-
-/*void PollData() {
-  String output = "";
-
-  int Aread0 = analogRead(analogue_pins[0]);
-  delay(10);
-
-  int Aread1 = analogRead(analogue_pins[1]);
-  delay(10);
-
-  int Aread2 = analogRead(analogue_pins[2]);
-  delay(10);
-
-  double phase_measurement = (double) 0.175953 *Aread0; //phase transducer
-  double current_measurement =  (double) 0.3434 * Aread1; //current transducer
-  double voltage_measurement = (double) (Aread2) * 0.034 + 1.5; //voltage transducer
-
-  String yeet = "";
-  output = yeet + phase_measurement + ' ' + current_measurement + ' ' + voltage_measurement;
-
-  if (millis() - time3 > 1000) { // Wait 1 second hopefully
-    Serial.println(output);
-    time3 = millis();
-  }
-}*/
 
 String ReturnDigitalRead(int Input) {
   if (Input == 0) {
@@ -238,4 +286,3 @@ void uptime()
   Serial.print(":");
   Serial.println(secs);*/
 }
-
