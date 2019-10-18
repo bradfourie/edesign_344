@@ -794,6 +794,7 @@ class HomeFrame(Frame):
             if controller.trip_status == "HIGH": 		
                 self.trip_status_entry.delete(0, tk.END)
                 self.trip_status_entry.insert(0, "Not Tripped")
+                controller.trip_status == "LOW"
 				
 		#create reset button
         self.reset_button = ttk.Button(self.winfo_toplevel(), text="Reset Trip Switch")
