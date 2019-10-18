@@ -52,7 +52,7 @@ void loop()
     time1 = millis();
   }
   // Charge pump timer 
-  if (millis() - time4 > 1) {
+  if (millis() - time4 > 0.1) {
     if(chargePumpOut){
       digitalWrite(digital_pins[0], LOW);
     }else{
@@ -106,25 +106,22 @@ void TransmitData() {
       switch (receivedChars[1]) {
         case '0' :
           Aread = analogRead(analogue_pins[0]);
-          output = 0.175953 * Aread; //phase transducer
-          /*if(output > 45){
-            output = 90;
-          }*/
-          if(output < 1){
+          output = (double) 0.175953 *Aread - 3; //phase transducer
+          if(output > 45 || output <= 3){
             output = 0;
           }
           break;
         case '1' :
           Aread = analogRead(analogue_pins[1]);
-          output = 0.3434 * Aread; //current transducer
-          if(output < 1){
+          output =  ((double) Aread*5/1023 * 73.455313 + 1.181447)/sqrt(2); //current transducer
+          if(output <= 1.181447/sqrt(2)){
             output = 0;
           }
           break;
         case '2' :
           Aread = analogRead(analogue_pins[2]);
-          output = (Aread) * 0.034 + 0.7; //voltage transducer
-          if(output <= 0.7){
+          output = ((double) Aread*5/1023 *7.348095 + 0.2585596)/sqrt(2); //voltage transducer
+          if(output <= 0.2585596/sqrt(2)){
             output = 0;
           }
           break;
@@ -172,40 +169,27 @@ void TransmitData() {
   
     int Aread2 = analogRead(analogue_pins[2]);
     delay(10);
-
-    //if(Aread0 <= 2){
-    //  Aread0 = 0;
-    //}
-    //if(Aread1 <= 5){
-    //  Aread1 = 0;
-    //}
-    //if(Aread2 <= 2){
-    //  Aread2 = 0;
-    //}
-  
-    //double phase_measurement = (double) 0.175953 *Aread0; //phase transducer
-    //double current_measurement =  (double) 0.3434 * Aread1; //current transducer
-    //double voltage_measurement = (double) (Aread2) * 0.034 + 0.7; //voltage transducer
-
+    
     double phase_measurement = (double) 0.175953 *Aread0 - 3; //phase transducer
     
-    //double current_measurement =  (double) Aread1*5/1023; //current transducer
-    double current_measurement =  (double) Aread1*5/1023 * 73.455313 + 1.181447; //current transducer
+    double current_measurement =  ((double) Aread1*5/1023 * 73.455313 + 1.181447)/sqrt(2); //current transducer
     
-    //double voltage_measurement = (double) Aread2*5/1023 * 6.8809865 + 0.92101109; //voltage transducer
-    double voltage_measurement = (double) Aread2*5/1023 *7.348095 + 0.2585596; //voltage transducer
+    double voltage_measurement = ((double) Aread2*5/1023 *7.348095 + 0.2585596)/sqrt(2); //voltage transducer
     
     String reset_value = ReturnDigitalRead(digitalRead(digital_pins[1]));
     
     if(phase_measurement > 45 || phase_measurement <= 3){
       phase_measurement = 0;
     }
-    if(voltage_measurement <= 0.2585596){
+    if(voltage_measurement <= 0.2585596/sqrt(2)){
       voltage_measurement = 0;
     }
-    if(current_measurement <= 1.181447){
-      current_measurement = 0;
-    }
+    //if(current_measurement <= 1.181447/sqrt(2)){
+    //  current_measurement = 0;
+    //}
+     if(current_measurement <= 2){
+    current_measurement = 0;
+  }
 
     String foobar = "";
     output = foobar + phase_measurement + ' ' + current_measurement + ' ' + voltage_measurement + ' ' + reset_value;
@@ -228,15 +212,6 @@ void DebugCheck() {
     int Aread2 = analogRead(analogue_pins[2]);
     delay(10);
 
-    /*if(Aread0 <= 5){
-      Aread0 = 0;
-    }
-    if(Aread1 <= 5){
-      Aread1 = 0;
-    }
-    if(Aread1 <= 5){
-      Aread1 = 0;
-    }*/
     DebugOutput = STUDENT_NUMBER + ',' + "A0:" + Aread0 + ',' + "A1:" + Aread1 + ',' + "A2:" + Aread2 +
                   ',' + "D0:" + ReturnDigitalRead(digitalRead(digital_pins[0])) + ',' + "D1:" + ReturnDigitalRead(digitalRead(digital_pins[1])) +
                   ',' + "D2:" + ReturnDigitalRead(digitalRead(digital_pins[2]));
@@ -278,11 +253,4 @@ void uptime()
   UptimeOutput = hours + comma + mins + comma + secs ;
   Serial.println("U");
   Serial.println(UptimeOutput);
-  //Display results
-  /*Serial.print("Uptime : ");
-  Serial.print(hours);
-  Serial.print(":");
-  Serial.print(mins);
-  Serial.print(":");
-  Serial.println(secs);*/
 }
