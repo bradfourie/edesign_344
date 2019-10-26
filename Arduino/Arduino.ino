@@ -249,7 +249,7 @@ void uptime()
   hours = hours - (days * 24); //subtract the coverted hours to days in order to display 23 hours max
   
   String UptimeOutput = "";
-  String comma = ",";
+  String comma = ":";
   UptimeOutput = hours + comma + mins + comma + secs ;
   Serial.println("U");
   Serial.println(UptimeOutput);
