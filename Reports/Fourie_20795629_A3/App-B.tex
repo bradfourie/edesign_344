@@ -1,0 +1,91 @@
+\chapter{Appendix B: Signal conditioning unit and integrated test results}
+
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+\begin{table} [h!]
+        \centering
+        \footnotesize
+        \caption{Voltage transducer intermediate unit test results.}
+             \begin{tabular}{C{2cm} C{2cm} C{2cm} C{2cm} C{2cm} C{2cm}}
+           Emulated level & Signal generator & Signal generator & Analogue output & Deduced input & Difference \\
+           ($V_{peak}$)   & ($V_{peak}$)   & ($V_{peak}$)   & ($VDC$)         & ($V_{peak}$)  & ($mV_{peak}$) \\
+           \hline
+            16      & 2.034 & 2.196 & 2.208 & 16.081 & 83.12 \\
+            21      & 2.736 & 2.915 & 2.916 & 21.009 & 8.67\\
+            21.15   & 2.764 & 2.936  & 2.940 & 21.174 & 23.55 \\
+            21.30   & 2.784 & 2.958 & 2.960 & 21.318 & 17.98 \\
+            26      & 3.463 & 3.634 & 3.626 & 25.946 & 53.96\\
+          \hline
+        \end{tabular}
+     \label{tab:voltagetransducerunittests}
+\end{table}
+
+\begin{table} [h!]
+        \centering
+        \footnotesize
+        \caption{Voltage transducer integrated test results.}
+         \begin{tabular}{C{1.9cm} C{1.2cm} C{1.2cm} | C{2.5cm} C{2.6cm} C{2.5cm} C{1.8cm}}
+           Measurement & Load R & Load C  & Measured input & Analogue output & Deduced input & Difference\\
+            & ($\Omega$) & ($\mu F$) & ($V_{peak}$) & ($VDC$) & ($V_{peak}$) & ($mV_{peak}$) \\
+        \hline
+            No load      & open & none & 30.38 & 4.270 & 30.406  & 26 \\
+            Full load    & 100  & none & 29.12 & 4.140 & 29.224  & 104 \\
+            Mid range    & 1k   & none & 30.08 & 4.240 & 30.198  & 118\\
+          \hline
+        \end{tabular}
+     \label{tab:voltagetransducerrealtests}
+\end{table}
+
+\begin{table} [h!]
+        \centering
+        \scriptsize
+        \caption{Current transducer intermediate unit test results.}
+             \begin{tabular}{C{2cm} C{2cm} C{2cm} C{2cm} C{2cm} C{2cm}}
+           Emulated level & Signal generator & Signal generator & Analogue output & Deduced input & Difference \\
+           ($mA_{peak}$)   & ($mV_{peak}$) & ($mV_{peak}$) & ($VDC$) & ($mA_{peak}$) & ($mA_{peak}$) \\
+           \hline
+            0       & 0 & 0 & 0.004 & 0.281 & 0.28\\
+            50      & 153.15 & 155.69 & 0.704 & 49.46   & 0.53\\
+            100     & 309.12 & 311.32 & 1.416 & 99.49   & 0.51\\
+            101     & 311.15 & 314.50 & 1.448 & 101.74  & 0.74\\
+            102     & 316.60 & 317.61 & 1.456 & 102.30  & 0.30\\
+            200     & 617.00 & 622.77 & 2.846 & 199.97  & 0.03\\
+            285     & 879.50  & 887.20 & 4.064 & 285.55  & 0.55\\
+          \hline
+        \end{tabular}
+     \label{tab:currenttransducerunittests}
+\end{table}
+
+\begin{table}  [h!]
+        \centering
+        \scriptsize
+        \caption{Current transducer integrated test results.}
+         \begin{tabular}{C{1.4cm} C{1.2cm} C{1.2cm} | C{1.8cm} C{1.8cm} C{2.2cm} C{2cm} C{1.8cm}}
+           Measure- & Load $R_1$ & Load $R_2$ & Measured $V_R$ & Actual input & Analogue output & Deduced input & Difference\\
+           ment & ($\Omega$) & ($\Omega$) & ($mV_{peak}$) & ($mV_{peak}$) & ($mV_{peak}$) & ($mA_{peak}$) & ($mA_{peak}$) \\
+        \hline
+            No load      & open & -   & 0      & 0      & 30.8  & 2.164   & 2.16\\
+            Full load    & 100  & -   & 9.045       & 301.51 & 4.28  & 300.73  & 0.78\\
+            Mid range    & 1k   & -   & 0.906       & 30.159 & 417.6 & 29.40 & 0.76 \\
+            Mid + $\delta$    & 1k   & 24k  & 0.943 & 31.415 & 435.4 & 30.59 & 0.69 \\
+          \hline
+        \end{tabular}
+     \label{tab:currenttransducerrealtests}
+\end{table}
+
+\begin{table} [h!]
+        \centering
+        \scriptsize
+        \caption{Phase shift transducer integrated test results.}
+         \begin{tabular}{C{1.6cm} C{1.1cm} C{1.1cm} | C{2cm} C{1.8cm} C{1.8cm} C{1.5cm} C{1.5cm}}
+           Measurement & Load R & Load C & Measured shift & Applied shift & Output level & Conversion & Difference\\
+            & ($\Omega$) & ($\mu F$) & (ms) & ($^o$) & ($mV_{DC}$) & ($^o$) & ($^o$) \\
+        \hline
+            No shift      & 1k    & -   & 0.026 & 0.468 & 38.89  & 1.397  & 0.929 \\
+            Max shift     & 1k    & 3.3 & 1.77 & 31.86 & 860.8  & 31.248  & 0.612 \\
+            Mid range           & 1k    & 22  & 0.37& 6.66 & 197.6  & 7.11 & 0.45 \\
+            Mid + $\delta$      & 1k    & 33 & 0.30 & 5.4 & 123.2 &4.44 & 0.96 \\
+            Mid + $2\delta$     & 1k    & 47 & 0.18 & 3.24 & 77.6  & 2.78 & 0.46 \\
+          \hline
+        \end{tabular}
+     \label{tab:phasetransducerrealtests}
+\end{table}

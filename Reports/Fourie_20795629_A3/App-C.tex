@@ -1,0 +1,37 @@
+\chapter{Appendix C: Communication protocol between the Beetle and GUI}
+
+\begin{table} [h!]
+        \centering
+        \footnotesize
+        \caption{Communication protocol commands from PC to Beetle}
+         \begin{tabular}{C{4cm} C{4cm} C{2cm} C{4cm}}
+           Command & Response & First Byte & Second Byte\\
+        \hline
+            Request Uptime & Requests a string displaying runtime in HH:mm:ss format & 'U' & None \\
+            Debug Mode & Requests student number and all the port readings in a comma seperate format  & 'X' & 0-disable \& 1-enable \\
+            Request Student Number & Requests student number & '0' & None \\
+            Request Analogue Reading & Requests analogue pin reading as a number in bits for debugging purposes & '1' & 0-Phase \& 1-Current \& 2-Voltage  \\
+            Request Digital Reading & Requests digital pin input/output status for debugging purposes & '2' & 0-Charge pump signal \& 1-SR latch output \& 2-Reset  \\
+            Request Trip Reset & Requests digital pin for reset to go high & 'T' & None  \\
+          \hline
+        \end{tabular}
+     \label{tab:commsprotocal1}
+\end{table}
+
+\begin{table} [h!]
+        \centering
+        \footnotesize
+        \caption{Communication protocol response from Beetle to PC}
+         \begin{tabular}{C{4cm} C{5cm} C{6cm}}
+           Command & Response & Payload\\
+        \hline
+            Print Uptime & Prints a string displaying runtime in HH:mm:ss format & Uptime string as HH:mm:ss \\
+            Debug Mode & Prints student number and all the port readings in a comma seperate format  & Debug string as student number, analogue pins and readings, digital pins and readings\\
+            Print Student Number & Prints student number & Student number as 8 characters \\
+            Print Analogue Reading & Prints analogue pin reading as a number in bits for debugging purposes & Port number followed by analogue value \\
+            Print Digital Reading & Prints digital pin input/output status for debugging purposes & Port number followed by high or low status \\
+            Print Routine Measurements & Prints calibrated transducer measurements and trip switch status every second & Phase, current and voltage transducer readings followed by trip switch status\\
+          \hline
+        \end{tabular}
+     \label{tab:commsprotocal2}
+\end{table}
